@@ -1,0 +1,36 @@
+# code coverage
+.cover
+
+# git repo
+.git
+
+# IDE customization
+.idea
+.vscode
+
+# binaries
+.bin
+
+# env customization
+.env
+.env.local
+
+# private keys and certs
+*_key.json
+*_secret.json
+**/.keys/*
+**/certs/*
+
+# changelog
+CHANGELOG.md
+
+# documentation (auto-generated)
+/docs/**/*
+
+# vendor
+vendor
+
+# temporary
+**/.DS_Store
+**/debug
+**/debug.test
