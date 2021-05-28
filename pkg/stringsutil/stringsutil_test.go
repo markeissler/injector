@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	stringsutil "github.com/alphaflow/injector/pkg/strings"
+	"github.com/alphaflow/injector/pkg/stringsutil"
 )
 
 func TestStringsUtil_IsBlank_False(t *testing.T) {

@@ -10,10 +10,10 @@ import (
 	"github.com/alphaflow/injector/pkg/stringsutil"
 )
 
-// ConvertUnicodeToAscii converts selected unicode characters to an ascii representation to support intended output.
+// ConvertUnicodeToASCII converts selected unicode characters to an ascii representation to support intended output.
 // For instance, a byte stream may include a unicode representation of the ampersand symbol (`&`) or various formatting
 // characters and in many cases ascii is the desired output with a common example being JSON.
-func ConvertUnicodeToAscii(data []byte) []byte {
+func ConvertUnicodeToASCII(data []byte) []byte {
 	// less than
 	data = bytes.Replace(data, []byte("\\u003c"), []byte("<"), -1)
 	// greater than
@@ -60,7 +60,7 @@ func ConvertUnicodeToAscii(data []byte) []byte {
 //		`SERVER_BASE_URL="https://institutional-api-staging.alphaflow.com/v1"`,
 // ]
 // ```
-func Flatten(jsonBytes []byte, path string, formatter string) []string {
+func Flatten(jsonBytes []byte, path, formatter string) []string {
 	result := gjson.GetBytes(jsonBytes, path)
 
 	return _recursivelyFlatten("", result, formatter)
