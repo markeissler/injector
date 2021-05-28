@@ -1,0 +1,47 @@
+name: Build GitHub Release
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+[0-9]*)?'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+
+      - name: Build
+        run: make all
+
+      - name: Generate Changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make changelog
+
+      - name: Release to GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: antonyurchenko/git-release@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFT_RELEASE: "true"
+          PRE_RELEASE: "true"
+          ALLOW_EMPTY_CHANGELOG: "false"
+          ALLOW_TAG_PREFIX: "true"
+          RELEASE_NAME_PREFIX: "Release"
+        with:
+          args: |
+            .bin/*.tar.gz
+            .bin/*.zip
