@@ -143,7 +143,7 @@ func run(ctx *cli.Context) error {
 
 	// Fetch the secret manager document content and copy to a buffer.
 	if err := gcp.FetchSecretDocument(ctx, &buf); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Set the output file to either stdout (default) or an actual file.
@@ -152,7 +152,7 @@ func run(ctx *cli.Context) error {
 		var err error
 		outputFile, err = os.Create(ctx.String("output-file"))
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer func() {
 			_ = outputFile.Close()
@@ -170,7 +170,7 @@ func run(ctx *cli.Context) error {
 	}
 
 	if err := runCommand(ctx, &buf, ctx.Args().Slice()); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil
@@ -206,7 +206,7 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	var err error
-	var data *map[string]interface{}
+	var data map[string]interface{}
 	if data, err = parseHJSON(ctx, buf); err != nil {
 		return err
 	}
@@ -235,19 +235,19 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 
 // convertMapToKeyValueList converts the parsed secret manager document environment variables to an array of key/value
 // strings. This format is suitable for input to the `cmd.Env` string array value.
-func convertMapToKeyValueList(ctx *cli.Context, data *map[string]interface{}) ([]string, error) {
+func convertMapToKeyValueList(ctx *cli.Context, data map[string]interface{}) ([]string, error) {
 	if ctx == nil {
-		log.Fatal(errors.New("invalid context"))
+		return []string{}, errors.New("invalid context")
 	}
 
 	if data == nil {
-		log.Fatal(errors.New("invalid environment map"))
+		return []string{}, errors.New("invalid environment map")
 	}
 
 	var jsonBytes []byte
 	var err error
 	if jsonBytes, err = json.Marshal(data); err != nil {
-		log.Fatal(err)
+		return []string{}, err
 	}
 
 	return jsonutil.Flatten(jsonBytes, "environment", ashOutputFormatter), nil
@@ -269,22 +269,22 @@ func outputBashEnv(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) err
 // line formatter string, to the specified io.Writer.
 func outputShell(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer, formatter string) error {
 	if ctx == nil {
-		log.Fatal(errors.New("invalid context"))
+		return errors.New("invalid context")
 	}
 
 	if buffer == nil {
-		log.Fatal(errors.New("invalid buffer"))
+		return errors.New("invalid buffer")
 	}
 
 	var err error
-	var data *map[string]interface{}
+	var data map[string]interface{}
 	if data, err = parseHJSON(ctx, buffer); err != nil {
 		return err
 	}
 
 	var jsonBytes []byte
 	if jsonBytes, err = json.Marshal(data); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	list := jsonutil.Flatten(jsonBytes, "environment", formatter)
@@ -307,7 +307,7 @@ func outputJSON(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error 
 	}
 
 	var err error
-	var data *map[string]interface{}
+	var data map[string]interface{}
 	if data, err = parseHJSON(ctx, buffer); err != nil {
 		return err
 	}
@@ -317,7 +317,7 @@ func outputJSON(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error 
 		log.Fatal(err)
 	}
 
-	prettyJSON = jsonutil.ConvertUnicodeToAscii(prettyJSON)
+	prettyJSON = jsonutil.ConvertUnicodeToASCII(prettyJSON)
 
 	n, err := writer.Write(prettyJSON)
 	if err != nil {
@@ -335,11 +335,11 @@ func outputJSON(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error 
 // outputRaw write the raw secret manager document contents to the specified io.Writer.
 func outputRaw(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
 	if ctx == nil {
-		log.Fatal(errors.New("invalid context"))
+		return errors.New("invalid context")
 	}
 
 	if buffer == nil {
-		log.Fatal(errors.New("invalid buffer"))
+		return errors.New("invalid buffer")
 	}
 
 	n, err := writer.Write(buffer.Bytes())
@@ -356,20 +356,20 @@ func outputRaw(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
 }
 
 // parseHJSON parses the raw secret manager document contents in JSON or HJSON content into a map.
-func parseHJSON(ctx *cli.Context, buffer *bytes.Buffer) (*map[string]interface{}, error) {
+func parseHJSON(ctx *cli.Context, buffer *bytes.Buffer) (map[string]interface{}, error) {
+	data := make(map[string]interface{})
+
 	if ctx == nil {
-		log.Fatal(errors.New("invalid context"))
+		return data, errors.New("invalid context")
 	}
 
 	if buffer == nil {
-		log.Fatal(errors.New("invalid buffer"))
+		return data, errors.New("invalid buffer")
 	}
 
-	// marshal JSON to a generic map
-	data := make(map[string]interface{}, 0)
 	if err := hjson.Unmarshal(buffer.Bytes(), &data); err != nil {
 		log.Fatal(err)
 	}
 
-	return &data, nil
+	return data, nil
 }

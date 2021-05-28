@@ -16,6 +16,9 @@ import (
 // FetchSecretDocument retrieves the secret manager document specified in cli arguments and writes the contents to the
 // specified io.Writer. The `latest` version will be retrieved if no version has been specified.
 func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
+	var client *secretmanager.Client
+	var err error
+
 	// Set the secret manager Client option for reading credentials from a file.
 	// TODO: Need to support reading this value from the environment as well!
 	clientOptions := []option.ClientOption{
@@ -23,12 +26,11 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 	}
 
 	// Create the secret manager Client.
-	client, err := secretmanager.NewClient(ctx.Context, clientOptions...)
-	if err != nil {
+	if client, err = secretmanager.NewClient(ctx.Context, clientOptions...); err != nil {
 		return fmt.Errorf("failed to create secretmanager client: %v", err)
 	}
 	defer func() {
-		if err := client.Close(); err != nil {
+		if err = client.Close(); err != nil {
 			log.Println("error encountered while cleaning up secretManager.Client")
 		}
 	}()
@@ -44,13 +46,13 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 	}
 
 	// Call the API.
-	result, err := client.AccessSecretVersion(ctx.Context, request)
-	if err != nil {
+	var result *secretmanagerpb.AccessSecretVersionResponse
+	if result, err = client.AccessSecretVersion(ctx.Context, request); err != nil {
 		return fmt.Errorf("failed to access secret version: %v", err)
 	}
 
 	// Write the contents to the io.Writer.
-	if _, err := fmt.Fprintf(writer, "%s\n", string(result.Payload.Data)); err != nil {
+	if _, err = fmt.Fprintf(writer, "%s\n", string(result.Payload.Data)); err != nil {
 		return err
 	}
 
