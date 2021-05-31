@@ -34,7 +34,7 @@ jobs:
         run: make changelog
 
       - name: Release to GitHub
-        uses: antonyurchenko/git-release:v3
+        uses: docker://antonyurchenko/git-release:v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRAFT_RELEASE: "true"
