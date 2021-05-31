@@ -2,10 +2,8 @@ name: Build GitHub Release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+[0-9]*)?'
+      - 'v[0-9]+.[0-9]+.[0-9]+(-(alpha|beta)[0-9]*)?'
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -33,7 +31,7 @@ jobs:
 
       - name: Release to GitHub
         if: startsWith(github.ref, 'refs/tags/')
-        uses: antonyurchenko/git-release@v3
+        uses: antonyurchenko/git-release:v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRAFT_RELEASE: "true"
