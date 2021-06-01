@@ -38,7 +38,6 @@ jobs:
       # Remove the leading `v` from the semver tag if present in CHANGELOG entries because git-release can't handle it.
       # Which is weird because git-release does let you specify `ALLOW_TAG_PREFIX` to indicate a prefix is present.
       - name: Massage Changelog
-        uses: docker://alpine:latest
         run: sed -i.bak -E 's/^##[ ]+\[v([0-9])/\[\1/' CHANGELOG.md && rm CHANGELOG.md.bak
 
       # Grab all build artifacts (tar.gz and zip archives) and generate a new release. Take care to set `DRAFT_RELEASE`
