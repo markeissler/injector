@@ -25,19 +25,31 @@ jobs:
         with:
           go-version: 1.16.x
 
+      # Run the actual build, cross compiling for all supported targets.
       - name: Build
         run: make all
 
+      # Automatically generate a changelog to attach to the release. This is not checked in because it's generated.
       - name: Generate Changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make changelog
 
+      # Remove the leading `v` from the semver tag if present in CHANGELOG entries because git-release can't handle it.
+      # Which is weird because git-release does let you specify `ALLOW_TAG_PREFIX` to indicate a prefix is present.
+      - name: Massage Changelog
+        uses: docker://alpine:latest
+        run: sed -i.bak -E 's/^##[ ]+\[v([0-9])/\[\1/' CHANGELOG.md && rm CHANGELOG.md.bak
+
+      # Grab all build artifacts (tar.gz and zip archives) and generate a new release. Take care to set `DRAFT_RELEASE`
+      # and `PRE_RELEASE` settings accordingly. The former will create a draft release if `true` and the latter will
+      # cause GitHub to identify the release as non-production ready if `true`. These values need to be manually toggled
+      # between releases if/when cycling through `alpha/beta/stable` releases.
       - name: Release to GitHub
         uses: docker://antonyurchenko/git-release:v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRAFT_RELEASE: "true"
+          DRAFT_RELEASE: "false"
           PRE_RELEASE: "true"
           ALLOW_EMPTY_CHANGELOG: "false"
           ALLOW_TAG_PREFIX: "true"
