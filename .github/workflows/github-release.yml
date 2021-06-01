@@ -45,7 +45,7 @@ jobs:
       # cause GitHub to identify the release as non-production ready if `true`. These values need to be manually toggled
       # between releases if/when cycling through `alpha/beta/stable` releases.
       - name: Release to GitHub
-        uses: docker://antonyurchenko/git-release:v3
+        uses: anton-yurchenko/git-release@v3.4.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRAFT_RELEASE: "false"
