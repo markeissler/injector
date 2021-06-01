@@ -38,7 +38,7 @@ jobs:
       # Remove the leading `v` from the semver tag if present in CHANGELOG entries because git-release can't handle it.
       # Which is weird because git-release does let you specify `ALLOW_TAG_PREFIX` to indicate a prefix is present.
       - name: Massage Changelog
-        run: sed -i.bak -E 's/^##[ ]+\[v([0-9])/\[\1/' CHANGELOG.md && rm CHANGELOG.md.bak
+        run: sed -i.bak -E 's/^##[ ]+\[v([0-9])/\[\1/' CHANGELOG.md && rm CHANGELOG.md.bak && cat CHANGELOG.md
 
       # Grab all build artifacts (tar.gz and zip archives) and generate a new release. Take care to set `DRAFT_RELEASE`
       # and `PRE_RELEASE` settings accordingly. The former will create a draft release if `true` and the latter will
