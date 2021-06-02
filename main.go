@@ -26,7 +26,7 @@ const (
 	bashOutputFormatter         = `export %s="%s"`
 	jsonIndent                  = `    `
 	envVarInjectorKeyValue      = "INJECTOR_KEY_VALUE"
-	envVarInjectorProjectId     = "INJECTOR_PROJECT_ID"
+	envVarInjectorProject       = "INJECTOR_PROJECT"
 	envVarInjectorSecretName    = "INJECTOR_SECRET_NAME"
 	envVarInjectorSecretVersion = "INJECTOR_SECRET_VERSION"
 )
@@ -105,7 +105,7 @@ func main() {
 				Aliases:  []string{"p"},
 				Usage:    "GCP project id.",
 				Required: true,
-				EnvVars:  []string{envVarInjectorProjectId},
+				EnvVars:  []string{envVarInjectorProject},
 			},
 			&cli.StringFlag{
 				Name:     "secret-name",
