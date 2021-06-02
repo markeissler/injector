@@ -182,31 +182,17 @@ func run(ctx *cli.Context) error {
 	}
 
 	// Disallow conflicting format options.
-	outputFormatConflict := 0
-	if ctx.Bool("json") {
-		outputFormatConflict++
-	}
-	if ctx.Bool("raw") {
-		outputFormatConflict++
-	}
-	if outputFormatConflict > 1 {
+	if numericutil.BoolToUint8(ctx.Bool("format-ash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-bash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-json"))+
+		numericutil.BoolToUint8(ctx.Bool("format-raw")) > 1 {
 		return cli.Exit("multiple output formats are not supported", 1)
 	}
 
 	// Disallow conflicting key source options.
-	// This only applies for cli options (i.e. ignore envVar values). If both cli option `key-file` is set and the
-	// envVar `key-value` is set, then the we will prefer the cli value.
-	keySourceConflict := 0
-	if !stringsutil.IsBlank(ctx.String("key-file")) {
-		keySourceConflict++
-	}
-	if !stringsutil.IsBlank(ctx.String("key-value")) && stringsutil.IsBlank(os.Getenv(envVarInjectorKeyValue)) {
-		keySourceConflict++
-	}
-	if keySourceConflict > 1 {
+	if !stringsutil.IsBlank(ctx.String("key-file")) && !stringsutil.IsBlank(ctx.String("key-value")) {
 		return cli.Exit("multiple key source formats are not supported", 1)
-	}
-	if stringsutil.IsBlank(ctx.String("key-file")) && stringsutil.IsBlank(ctx.String("key-value")) {
+	} else if stringsutil.IsBlank(ctx.String("key-file")) && stringsutil.IsBlank(ctx.String("key-value")) {
 		return cli.Exit("at least one key source format is required", 1)
 	}
 
