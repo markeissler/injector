@@ -21,10 +21,14 @@ import (
 )
 
 const (
-	appName             = "inject"
-	ashOutputFormatter  = `%s="%s"`
-	bashOutputFormatter = `export %s="%s"`
-	jsonIndent          = `    `
+	appName                     = "inject"
+	ashOutputFormatter          = `%s="%s"`
+	bashOutputFormatter         = `export %s="%s"`
+	jsonIndent                  = `    `
+	envVarInjectorKeyValue      = "INJECTOR_KEY_VALUE"
+	envVarInjectorProjectId     = "INJECTOR_PROJECT_ID"
+	envVarInjectorSecretName    = "INJECTOR_SECRET_NAME"
+	envVarInjectorSecretVersion = "INJECTOR_SECRET_VERSION"
 )
 
 var (
@@ -52,7 +56,14 @@ func main() {
 				Name:     "key-file",
 				Aliases:  []string{"k"},
 				Usage:    "Path to file containing JSON format service account key.",
-				Required: true,
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     "key-value",
+				Aliases:  []string{"K"},
+				Usage:    "Base64 encoded string containing JSON format service account key.",
+				Required: false,
+				EnvVars:  []string{envVarInjectorKeyValue},
 			},
 			&cli.BoolFlag{
 				Name:     "format-ash",
@@ -94,18 +105,21 @@ func main() {
 				Aliases:  []string{"p"},
 				Usage:    "GCP project id.",
 				Required: true,
+				EnvVars:  []string{envVarInjectorProjectId},
 			},
 			&cli.StringFlag{
 				Name:     "secret-name",
 				Usage:    "Name of secret containing environment variables and values.",
 				Aliases:  []string{"S"},
 				Required: true,
+				EnvVars:  []string{envVarInjectorSecretName},
 			},
 			&cli.StringFlag{
 				Name:     "secret-version",
 				Usage:    "Version of secret containing environment variables and values. (default: latest)",
 				Aliases:  []string{"V"},
 				Required: false,
+				EnvVars:  []string{envVarInjectorSecretVersion},
 			},
 		},
 	}
@@ -130,15 +144,32 @@ func run(ctx *cli.Context) error {
 	var buf bytes.Buffer
 
 	// Disallow conflicting format options.
-	conflict := 0
+	outputFormatConflict := 0
 	if ctx.Bool("json") {
-		conflict++
+		outputFormatConflict++
 	}
 	if ctx.Bool("raw") {
-		conflict++
+		outputFormatConflict++
 	}
-	if conflict > 1 {
+	if outputFormatConflict > 1 {
 		return cli.Exit("multiple output formats are not supported", 1)
+	}
+
+	// Disallow conflicting key source options.
+	// This only applies for cli options (i.e. ignore envVar values). If both cli option `key-file` is set and the
+	// envVar `key-value` is set, then the we will prefer the cli value.
+	keySourceConflict := 0
+	if !stringsutil.IsBlank(ctx.String("key-file")) {
+		keySourceConflict++
+	}
+	if !stringsutil.IsBlank(ctx.String("key-value")) && stringsutil.IsBlank(os.Getenv(envVarInjectorKeyValue)) {
+		keySourceConflict++
+	}
+	if keySourceConflict > 1 {
+		return cli.Exit("multiple key source formats are not supported", 1)
+	}
+	if stringsutil.IsBlank(ctx.String("key-file")) && stringsutil.IsBlank(ctx.String("key-value")) {
+		return cli.Exit("at least one key source format is required", 1)
 	}
 
 	// Fetch the secret manager document content and copy to a buffer.

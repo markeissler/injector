@@ -1,6 +1,7 @@
 package gcp
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 
@@ -20,9 +21,15 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 	var err error
 
 	// Set the secret manager Client option for reading credentials from a file.
-	// TODO: Need to support reading this value from the environment as well!
-	clientOptions := []option.ClientOption{
-		option.WithCredentialsFile(ctx.String("key-file")),
+	clientOptions := make([]option.ClientOption, 0)
+	if !stringsutil.IsBlank(ctx.String("key-file")) {
+		clientOptions = append(clientOptions, option.WithCredentialsFile(ctx.String("key-file")))
+	} else if !stringsutil.IsBlank(ctx.String("key-value")) {
+		jsonBytes, err := base64.StdEncoding.DecodeString(ctx.String("key-value"))
+		if err != nil {
+			return fmt.Errorf("failed to decode secretmanager service account key value: %v", err)
+		}
+		clientOptions = append(clientOptions, option.WithCredentialsJSON(jsonBytes))
 	}
 
 	// Create the secret manager Client.
