@@ -8,6 +8,9 @@ VERSION         ?= $(shell git describe --tags --always --dirty --match="*" 2> /
 		       		cat $(CURDIR)/.version 2> /dev/null || echo v0)
 COMMIT          ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 BRANCH          ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+PKGS             = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
+TESTARGS         = -race -v
+TESTPKGS         = $(shell env GO111MODULE=on $(GO) list -f '{{ .ImportPath }}' $(PKGS))
 BIN              = $(CURDIR)/.bin
 LINT_CONFIG      = $(CURDIR)/.golangci.yml
 PLATFORMS        = darwin/amd64 darwin/arm64 linux/amd64 linux/arm64
@@ -100,13 +103,20 @@ GOLINT = golangci-lint
 # Tests
 #
 
-.PHONY: lint
-lint: setup-lint ; $(info $(M) running golangci-lint) @ ## Run golangci-lint
-	$Q $(GOLINT) run --timeout=5m -v -c $(LINT_CONFIG) ./...
+.PHONY: test-all
+test-all: fmt lint test
 
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt...) @ ## Run gofmt on all source files
 	$Q $(GO) fmt $(PKGS)
+
+.PHONY: lint
+lint: setup-lint ; $(info $(M) running golangci-lint...) @ ## Run golangci-lint
+	$Q $(GOLINT) run --timeout=5m -v -c $(LINT_CONFIG) ./...
+
+.PHONY: test
+test: ; $(info $(M) running tests...) @ ## Run tests
+	$Q CGO_ENABLED=1 $(GO) test -timeout $(TIMEOUT)s $(TESTARGS) $(TESTPKGS)
 
 #
 # Misc
