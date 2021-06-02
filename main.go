@@ -18,7 +18,7 @@ import (
 	"github.com/alphaflow/injector/gcp"
 	"github.com/alphaflow/injector/pkg/jsonutil"
 	"github.com/alphaflow/injector/pkg/numericutil"
-	"github.com/alphaflow/injector/pkg/stringsutil"
+	"github.com/alphaflow/injector/pkg/stringutil"
 )
 
 const (
@@ -158,7 +158,7 @@ func debug(ctx *cli.Context, writer io.Writer) {
 			}
 
 			value := ctx.String(name)
-			if stringsutil.IsBlank(value) {
+			if stringutil.IsBlank(value) {
 				value = "<NOT SET>"
 			}
 			fmt.Fprintf(writer, "%s: %s\n", name, value)
@@ -190,9 +190,9 @@ func run(ctx *cli.Context) error {
 	}
 
 	// Disallow conflicting key source options.
-	if !stringsutil.IsBlank(ctx.String("key-file")) && !stringsutil.IsBlank(ctx.String("key-value")) {
+	if !stringutil.IsBlank(ctx.String("key-file")) && !stringutil.IsBlank(ctx.String("key-value")) {
 		return cli.Exit("multiple key source formats are not supported", 1)
-	} else if stringsutil.IsBlank(ctx.String("key-file")) && stringsutil.IsBlank(ctx.String("key-value")) {
+	} else if stringutil.IsBlank(ctx.String("key-file")) && stringutil.IsBlank(ctx.String("key-value")) {
 		return cli.Exit("at least one key source format is required", 1)
 	}
 
@@ -203,7 +203,7 @@ func run(ctx *cli.Context) error {
 
 	// Set the output file to either stdout (default) or an actual file.
 	outputFile := os.Stdout
-	if !stringsutil.IsBlank(ctx.String("output-file")) && ctx.String("output-file") != "-" {
+	if !stringutil.IsBlank(ctx.String("output-file")) && ctx.String("output-file") != "-" {
 		var err error
 		outputFile, err = os.Create(ctx.String("output-file"))
 		if err != nil {

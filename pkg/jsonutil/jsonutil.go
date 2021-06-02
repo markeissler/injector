@@ -7,7 +7,7 @@ import (
 
 	"github.com/tidwall/gjson"
 
-	"github.com/alphaflow/injector/pkg/stringsutil"
+	"github.com/alphaflow/injector/pkg/stringutil"
 )
 
 // ConvertUnicodeToASCII converts selected unicode characters to an ascii representation to support intended output.
@@ -74,7 +74,7 @@ func _recursivelyFlatten(parent string, result gjson.Result, formatter string) [
 	s := make([]string, 0)
 	result.ForEach(func(key, value gjson.Result) bool {
 		keyName := strings.ToUpper(key.String())
-		if !stringsutil.IsBlank(parent) {
+		if !stringutil.IsBlank(parent) {
 			keyName = strings.Join([]string{parent, keyName}, "_")
 		}
 		if value.Type == gjson.JSON {
