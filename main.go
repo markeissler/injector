@@ -17,6 +17,7 @@ import (
 
 	"github.com/alphaflow/injector/gcp"
 	"github.com/alphaflow/injector/pkg/jsonutil"
+	"github.com/alphaflow/injector/pkg/numericutil"
 	"github.com/alphaflow/injector/pkg/stringsutil"
 )
 
@@ -145,8 +146,8 @@ func main() {
 }
 
 // debug outputs version information, resolved inputs from cli options and environment variables to the specified
-// io.Writer and then exits.
-func debug(ctx *cli.Context, writer io.Writer) error {
+// io.Writer.
+func debug(ctx *cli.Context, writer io.Writer) {
 	cli.ShowVersion(ctx)
 
 	for _, flag := range ctx.App.Flags {
@@ -168,16 +169,16 @@ func debug(ctx *cli.Context, writer io.Writer) error {
 		fmt.Fprintf(writer, "  [%d]: %v\n", i, a)
 	}
 
-	return nil
+	return
 }
 
 // run is the app main loop. Further branching will incur in this function to direct operations based on cli options.
 func run(ctx *cli.Context) error {
 	var buf bytes.Buffer
 
-	// Output debug information and exit.
+	// Output debug information and continue.
 	if ctx.Bool("debug") {
-		return debug(ctx, os.Stdout)
+		debug(ctx, os.Stdout)
 	}
 
 	// Disallow conflicting format options.
