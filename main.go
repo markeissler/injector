@@ -121,16 +121,21 @@ func main() {
 				Required: false,
 				EnvVars:  []string{envVarInjectorSecretVersion},
 			},
+			&cli.BoolFlag{
+				Name:    "debug",
+				Usage:   "Show debug information and exit.",
+				Aliases: []string{"d"},
+			},
 		},
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Printf("version: %s\n", Version)
-		fmt.Printf("  build date: %s\n", BuildDate)
-		fmt.Printf("  commit: %s\n", GitCommit)
-		fmt.Printf("  branch: %s\n", GitBranch)
-		fmt.Printf("  platform: %s\n", Platform)
-		fmt.Printf("  built with: %s\n", runtime.Version())
+		fmt.Fprintf(os.Stdout, "version: %s\n", Version)
+		fmt.Fprintf(os.Stdout, "  build date: %s\n", BuildDate)
+		fmt.Fprintf(os.Stdout, "  commit: %s\n", GitCommit)
+		fmt.Fprintf(os.Stdout, "  branch: %s\n", GitBranch)
+		fmt.Fprintf(os.Stdout, "  platform: %s\n", Platform)
+		fmt.Fprintf(os.Stdout, "  built with: %s\n", runtime.Version())
 	}
 
 	err := app.Run(os.Args)
@@ -139,9 +144,41 @@ func main() {
 	}
 }
 
+// debug outputs version information, resolved inputs from cli options and environment variables to the specified
+// io.Writer and then exits.
+func debug(ctx *cli.Context, writer io.Writer) error {
+	cli.ShowVersion(ctx)
+
+	for _, flag := range ctx.App.Flags {
+		for _, name := range flag.Names() {
+			if len(name) == 1 {
+				// skip aliases
+				continue
+			}
+
+			value := ctx.String(name)
+			if stringsutil.IsBlank(value) {
+				value = "<NOT SET>"
+			}
+			fmt.Fprintf(writer, "%s: %s\n", name, value)
+		}
+	}
+
+	for i, a := range ctx.Args().Slice() {
+		fmt.Fprintf(writer, "  [%d]: %v\n", i, a)
+	}
+
+	return nil
+}
+
 // run is the app main loop. Further branching will incur in this function to direct operations based on cli options.
 func run(ctx *cli.Context) error {
 	var buf bytes.Buffer
+
+	// Output debug information and exit.
+	if ctx.Bool("debug") {
+		return debug(ctx, os.Stdout)
+	}
 
 	// Disallow conflicting format options.
 	outputFormatConflict := 0
