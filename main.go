@@ -168,8 +168,28 @@ func debug(ctx *cli.Context, writer io.Writer) {
 	for i, a := range ctx.Args().Slice() {
 		fmt.Fprintf(writer, "  [%d]: %v\n", i, a)
 	}
+}
 
-	return
+// hasConflictingOptions checks for options that may conflict. A conflict exists when multiple options enable similar
+// functionality and/or when an option is configured via an environment variable while a conflicting option is set from
+// a cli option flag (if specifying both options via cli option flag, for instance, a conflict would also occur).
+func hasConflictingOptions(ctx *cli.Context) (bool, error) {
+	// Disallow conflicting format options.
+	if numericutil.BoolToUint8(ctx.Bool("format-ash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-bash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-json"))+
+		numericutil.BoolToUint8(ctx.Bool("format-raw")) > 1 {
+		return true, errors.New("multiple output formats are not supported")
+	}
+
+	// Disallow conflicting key source options.
+	if !stringutil.IsBlank(ctx.String("key-file")) && !stringutil.IsBlank(ctx.String("key-value")) {
+		return true, errors.New("multiple key source formats are not supported")
+	} else if stringutil.IsBlank(ctx.String("key-file")) && stringutil.IsBlank(ctx.String("key-value")) {
+		return true, errors.New("at least one key source format is required")
+	}
+
+	return false, nil
 }
 
 // run is the app main loop. Further branching will incur in this function to direct operations based on cli options.
@@ -181,19 +201,9 @@ func run(ctx *cli.Context) error {
 		debug(ctx, os.Stdout)
 	}
 
-	// Disallow conflicting format options.
-	if numericutil.BoolToUint8(ctx.Bool("format-ash"))+
-		numericutil.BoolToUint8(ctx.Bool("format-bash"))+
-		numericutil.BoolToUint8(ctx.Bool("format-json"))+
-		numericutil.BoolToUint8(ctx.Bool("format-raw")) > 1 {
-		return cli.Exit("multiple output formats are not supported", 1)
-	}
-
-	// Disallow conflicting key source options.
-	if !stringutil.IsBlank(ctx.String("key-file")) && !stringutil.IsBlank(ctx.String("key-value")) {
-		return cli.Exit("multiple key source formats are not supported", 1)
-	} else if stringutil.IsBlank(ctx.String("key-file")) && stringutil.IsBlank(ctx.String("key-value")) {
-		return cli.Exit("at least one key source format is required", 1)
+	// Make sure potentially conflicting options are not set.
+	if ok, err := hasConflictingOptions(ctx); !ok {
+		return cli.Exit(err, 1)
 	}
 
 	// Fetch the secret manager document content and copy to a buffer.

@@ -25,7 +25,8 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 	if !stringutil.IsBlank(ctx.String("key-file")) {
 		clientOptions = append(clientOptions, option.WithCredentialsFile(ctx.String("key-file")))
 	} else if !stringutil.IsBlank(ctx.String("key-value")) {
-		jsonBytes, err := base64.StdEncoding.DecodeString(ctx.String("key-value"))
+		var jsonBytes []byte
+		jsonBytes, err = base64.StdEncoding.DecodeString(ctx.String("key-value"))
 		if err != nil {
 			return fmt.Errorf("failed to decode secretmanager service account key value: %v", err)
 		}
