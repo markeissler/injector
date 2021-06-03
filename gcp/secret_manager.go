@@ -1,6 +1,7 @@
 package gcp
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 
@@ -10,7 +11,7 @@ import (
 	"google.golang.org/api/option"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 
-	"github.com/alphaflow/injector/pkg/stringsutil"
+	"github.com/alphaflow/injector/pkg/stringutil"
 )
 
 // FetchSecretDocument retrieves the secret manager document specified in cli arguments and writes the contents to the
@@ -20,9 +21,16 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 	var err error
 
 	// Set the secret manager Client option for reading credentials from a file.
-	// TODO: Need to support reading this value from the environment as well!
-	clientOptions := []option.ClientOption{
-		option.WithCredentialsFile(ctx.String("key-file")),
+	clientOptions := make([]option.ClientOption, 0)
+	if !stringutil.IsBlank(ctx.String("key-file")) {
+		clientOptions = append(clientOptions, option.WithCredentialsFile(ctx.String("key-file")))
+	} else if !stringutil.IsBlank(ctx.String("key-value")) {
+		var jsonBytes []byte
+		jsonBytes, err = base64.StdEncoding.DecodeString(ctx.String("key-value"))
+		if err != nil {
+			return fmt.Errorf("failed to decode secretmanager service account key value: %v", err)
+		}
+		clientOptions = append(clientOptions, option.WithCredentialsJSON(jsonBytes))
 	}
 
 	// Create the secret manager Client.
@@ -37,7 +45,7 @@ func FetchSecretDocument(ctx *cli.Context, writer io.Writer) error {
 
 	// Build the request.
 	secretVersion := "latest"
-	if !stringsutil.IsBlank(ctx.String("secret-version")) {
+	if !stringutil.IsBlank(ctx.String("secret-version")) {
 		secretVersion = ctx.String("secret-version")
 	}
 	secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/%s", ctx.String("project"), ctx.String("secret-name"), secretVersion)

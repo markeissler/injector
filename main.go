@@ -17,14 +17,19 @@ import (
 
 	"github.com/alphaflow/injector/gcp"
 	"github.com/alphaflow/injector/pkg/jsonutil"
-	"github.com/alphaflow/injector/pkg/stringsutil"
+	"github.com/alphaflow/injector/pkg/numericutil"
+	"github.com/alphaflow/injector/pkg/stringutil"
 )
 
 const (
-	appName             = "inject"
-	ashOutputFormatter  = `%s="%s"`
-	bashOutputFormatter = `export %s="%s"`
-	jsonIndent          = `    `
+	appName                     = "inject"
+	ashOutputFormatter          = `%s="%s"`
+	bashOutputFormatter         = `export %s="%s"`
+	jsonIndent                  = `    `
+	envVarInjectorKeyValue      = "INJECTOR_KEY_VALUE"
+	envVarInjectorProject       = "INJECTOR_PROJECT"
+	envVarInjectorSecretName    = "INJECTOR_SECRET_NAME"
+	envVarInjectorSecretVersion = "INJECTOR_SECRET_VERSION"
 )
 
 var (
@@ -52,7 +57,14 @@ func main() {
 				Name:     "key-file",
 				Aliases:  []string{"k"},
 				Usage:    "Path to file containing JSON format service account key.",
-				Required: true,
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     "key-value",
+				Aliases:  []string{"K"},
+				Usage:    "Base64 encoded string containing JSON format service account key.",
+				Required: false,
+				EnvVars:  []string{envVarInjectorKeyValue},
 			},
 			&cli.BoolFlag{
 				Name:     "format-ash",
@@ -94,29 +106,37 @@ func main() {
 				Aliases:  []string{"p"},
 				Usage:    "GCP project id.",
 				Required: true,
+				EnvVars:  []string{envVarInjectorProject},
 			},
 			&cli.StringFlag{
 				Name:     "secret-name",
 				Usage:    "Name of secret containing environment variables and values.",
 				Aliases:  []string{"S"},
 				Required: true,
+				EnvVars:  []string{envVarInjectorSecretName},
 			},
 			&cli.StringFlag{
 				Name:     "secret-version",
 				Usage:    "Version of secret containing environment variables and values. (default: latest)",
 				Aliases:  []string{"V"},
 				Required: false,
+				EnvVars:  []string{envVarInjectorSecretVersion},
+			},
+			&cli.BoolFlag{
+				Name:    "debug",
+				Usage:   "Show debug information and exit.",
+				Aliases: []string{"d"},
 			},
 		},
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Printf("version: %s\n", Version)
-		fmt.Printf("  build date: %s\n", BuildDate)
-		fmt.Printf("  commit: %s\n", GitCommit)
-		fmt.Printf("  branch: %s\n", GitBranch)
-		fmt.Printf("  platform: %s\n", Platform)
-		fmt.Printf("  built with: %s\n", runtime.Version())
+		fmt.Fprintf(os.Stdout, "version: %s\n", Version)
+		fmt.Fprintf(os.Stdout, "  build date: %s\n", BuildDate)
+		fmt.Fprintf(os.Stdout, "  commit: %s\n", GitCommit)
+		fmt.Fprintf(os.Stdout, "  branch: %s\n", GitBranch)
+		fmt.Fprintf(os.Stdout, "  platform: %s\n", Platform)
+		fmt.Fprintf(os.Stdout, "  built with: %s\n", runtime.Version())
 	}
 
 	err := app.Run(os.Args)
@@ -125,20 +145,65 @@ func main() {
 	}
 }
 
+// debug outputs version information, resolved inputs from cli options and environment variables to the specified
+// io.Writer.
+func debug(ctx *cli.Context, writer io.Writer) {
+	cli.ShowVersion(ctx)
+
+	for _, flag := range ctx.App.Flags {
+		for _, name := range flag.Names() {
+			if len(name) == 1 {
+				// skip aliases
+				continue
+			}
+
+			value := ctx.String(name)
+			if stringutil.IsBlank(value) {
+				value = "<NOT SET>"
+			}
+			fmt.Fprintf(writer, "%s: %s\n", name, value)
+		}
+	}
+
+	for i, a := range ctx.Args().Slice() {
+		fmt.Fprintf(writer, "  [%d]: %v\n", i, a)
+	}
+}
+
+// hasConflictingOptions checks for options that may conflict. A conflict exists when multiple options enable similar
+// functionality and/or when an option is configured via an environment variable while a conflicting option is set from
+// a cli option flag (if specifying both options via cli option flag, for instance, a conflict would also occur).
+func hasConflictingOptions(ctx *cli.Context) (bool, error) {
+	// Disallow conflicting format options.
+	if numericutil.BoolToUint8(ctx.Bool("format-ash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-bash"))+
+		numericutil.BoolToUint8(ctx.Bool("format-json"))+
+		numericutil.BoolToUint8(ctx.Bool("format-raw")) > 1 {
+		return true, errors.New("multiple output formats are not supported")
+	}
+
+	// Disallow conflicting key source options.
+	if !stringutil.IsBlank(ctx.String("key-file")) && !stringutil.IsBlank(ctx.String("key-value")) {
+		return true, errors.New("multiple key source formats are not supported")
+	} else if stringutil.IsBlank(ctx.String("key-file")) && stringutil.IsBlank(ctx.String("key-value")) {
+		return true, errors.New("at least one key source format is required")
+	}
+
+	return false, nil
+}
+
 // run is the app main loop. Further branching will incur in this function to direct operations based on cli options.
 func run(ctx *cli.Context) error {
 	var buf bytes.Buffer
 
-	// Disallow conflicting format options.
-	conflict := 0
-	if ctx.Bool("json") {
-		conflict++
+	// Output debug information and continue.
+	if ctx.Bool("debug") {
+		debug(ctx, os.Stdout)
 	}
-	if ctx.Bool("raw") {
-		conflict++
-	}
-	if conflict > 1 {
-		return cli.Exit("multiple output formats are not supported", 1)
+
+	// Make sure potentially conflicting options are not set.
+	if ok, err := hasConflictingOptions(ctx); !ok {
+		return cli.Exit(err, 1)
 	}
 
 	// Fetch the secret manager document content and copy to a buffer.
@@ -148,7 +213,7 @@ func run(ctx *cli.Context) error {
 
 	// Set the output file to either stdout (default) or an actual file.
 	outputFile := os.Stdout
-	if !stringsutil.IsBlank(ctx.String("output-file")) && ctx.String("output-file") != "-" {
+	if !stringutil.IsBlank(ctx.String("output-file")) && ctx.String("output-file") != "-" {
 		var err error
 		outputFile, err = os.Create(ctx.String("output-file"))
 		if err != nil {
