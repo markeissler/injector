@@ -202,7 +202,7 @@ func run(ctx *cli.Context) error {
 	}
 
 	// Make sure potentially conflicting options are not set.
-	if ok, err := hasConflictingOptions(ctx); !ok {
+	if bad, err := hasConflictingOptions(ctx); bad {
 		return cli.Exit(err, 1)
 	}
 
