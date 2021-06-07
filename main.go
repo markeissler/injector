@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"runtime"
 	"syscall"
+	cliTemplate "text/template"
 
 	"github.com/hjson/hjson-go"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ import (
 	"github.com/alphaflow/injector/pkg/jsonutil"
 	"github.com/alphaflow/injector/pkg/numericutil"
 	"github.com/alphaflow/injector/pkg/stringutil"
+	"github.com/alphaflow/injector/template"
 )
 
 const (
@@ -128,6 +130,14 @@ func main() {
 				Aliases: []string{"d"},
 			},
 		},
+	}
+
+	cli.AppHelpTemplate = template.AppHelpTemplate()
+	cli.HelpPrinter = func(out io.Writer, templ string, data interface{}) {
+		funcMap := cliTemplate.FuncMap{
+			"stripDefault": template.StripDefault,
+		}
+		cli.HelpPrinterCustom(out, templ, data, funcMap)
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
