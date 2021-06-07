@@ -1,13 +1,13 @@
 package template
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/urfave/cli/v2"
 )
 
 // AppHelpTemplate returns the text template for the Default help topic.
+// nolint:lll
 func AppHelpTemplate() string {
 	return `NAME:
    {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
@@ -69,5 +69,5 @@ func StripDefault(v interface{}) string {
 		return r.ReplaceAllString(v.(cli.Flag).String(), "")
 	}
 
-	return fmt.Sprintf("%s", v.(cli.Flag).String())
+	return v.(cli.Flag).String()
 }

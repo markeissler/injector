@@ -54,82 +54,7 @@ func main() {
 		Action:                 run,
 		Version:                Version,
 		UseShortOptionHandling: true,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "key-file",
-				Aliases:  []string{"k"},
-				Usage:    "Path to file containing JSON format service account key.",
-				Required: false,
-			},
-			&cli.StringFlag{
-				Name:     "key-value",
-				Aliases:  []string{"K"},
-				Usage:    "Base64 encoded string containing JSON format service account key.",
-				Required: false,
-				EnvVars:  []string{envVarInjectorKeyValue},
-			},
-			&cli.BoolFlag{
-				Name:     "format-ash",
-				Aliases:  []string{"a"},
-				Usage:    "Parse secret contents and convert to ash (shell) environment settings.",
-				Required: false,
-			},
-			&cli.BoolFlag{
-				Name:     "format-bash",
-				Aliases:  []string{"b"},
-				Usage:    "Parse secret contents and convert to bash (shell) environment settings.",
-				Required: false,
-			},
-			&cli.BoolFlag{
-				Name:     "format-json",
-				Aliases:  []string{"j"},
-				Usage:    "Parse secret contents and convert from hJSON to JSON.",
-				Required: false,
-			},
-			&cli.BoolFlag{
-				Name:     "format-raw",
-				Aliases:  []string{"r"},
-				Usage:    "Output unparsed secret contents. This will likely be hJSON or JSON.",
-				Required: false,
-			},
-			&cli.BoolFlag{
-				Name:    "preserve-env",
-				Aliases: []string{"E"},
-				Usage:   "Pass environment variables from parent OS into command shell. (default: false)",
-			},
-			&cli.StringFlag{
-				Name:     "output-file",
-				Aliases:  []string{"o"},
-				Usage:    "Write output to file. Default is stdout; passing - also represents stdout.",
-				Required: false,
-			},
-			&cli.StringFlag{
-				Name:     "project",
-				Aliases:  []string{"p"},
-				Usage:    "GCP project id.",
-				Required: true,
-				EnvVars:  []string{envVarInjectorProject},
-			},
-			&cli.StringFlag{
-				Name:     "secret-name",
-				Usage:    "Name of secret containing environment variables and values.",
-				Aliases:  []string{"S"},
-				Required: true,
-				EnvVars:  []string{envVarInjectorSecretName},
-			},
-			&cli.StringFlag{
-				Name:     "secret-version",
-				Usage:    "Version of secret containing environment variables and values. (default: latest)",
-				Aliases:  []string{"V"},
-				Required: false,
-				EnvVars:  []string{envVarInjectorSecretVersion},
-			},
-			&cli.BoolFlag{
-				Name:    "debug",
-				Usage:   "Show debug information and exit.",
-				Aliases: []string{"d"},
-			},
-		},
+		Flags:                  flags(),
 	}
 
 	cli.AppHelpTemplate = template.AppHelpTemplate()
@@ -177,6 +102,86 @@ func debug(ctx *cli.Context, writer io.Writer) {
 
 	for i, a := range ctx.Args().Slice() {
 		fmt.Fprintf(writer, "  [%d]: %v\n", i, a)
+	}
+}
+
+// flags defines all of the option flags and corresponding environment variables (if applicable) for the app.
+func flags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:     "key-file",
+			Aliases:  []string{"k"},
+			Usage:    "Path to file containing JSON format service account key.",
+			Required: false,
+		},
+		&cli.StringFlag{
+			Name:     "key-value",
+			Aliases:  []string{"K"},
+			Usage:    "Base64 encoded string containing JSON format service account key.",
+			Required: false,
+			EnvVars:  []string{envVarInjectorKeyValue},
+		},
+		&cli.BoolFlag{
+			Name:     "format-ash",
+			Aliases:  []string{"a"},
+			Usage:    "Parse secret contents and convert to ash (shell) environment settings.",
+			Required: false,
+		},
+		&cli.BoolFlag{
+			Name:     "format-bash",
+			Aliases:  []string{"b"},
+			Usage:    "Parse secret contents and convert to bash (shell) environment settings.",
+			Required: false,
+		},
+		&cli.BoolFlag{
+			Name:     "format-json",
+			Aliases:  []string{"j"},
+			Usage:    "Parse secret contents and convert from hJSON to JSON.",
+			Required: false,
+		},
+		&cli.BoolFlag{
+			Name:     "format-raw",
+			Aliases:  []string{"r"},
+			Usage:    "Output unparsed secret contents. This will likely be hJSON or JSON.",
+			Required: false,
+		},
+		&cli.BoolFlag{
+			Name:    "preserve-env",
+			Aliases: []string{"E"},
+			Usage:   "Pass environment variables from parent OS into command shell. (default: false)",
+		},
+		&cli.StringFlag{
+			Name:     "output-file",
+			Aliases:  []string{"o"},
+			Usage:    "Write output to file. Default is stdout; passing - also represents stdout.",
+			Required: false,
+		},
+		&cli.StringFlag{
+			Name:     "project",
+			Aliases:  []string{"p"},
+			Usage:    "GCP project id.",
+			Required: true,
+			EnvVars:  []string{envVarInjectorProject},
+		},
+		&cli.StringFlag{
+			Name:     "secret-name",
+			Usage:    "Name of secret containing environment variables and values.",
+			Aliases:  []string{"S"},
+			Required: true,
+			EnvVars:  []string{envVarInjectorSecretName},
+		},
+		&cli.StringFlag{
+			Name:     "secret-version",
+			Usage:    "Version of secret containing environment variables and values. (default: latest)",
+			Aliases:  []string{"V"},
+			Required: false,
+			EnvVars:  []string{envVarInjectorSecretVersion},
+		},
+		&cli.BoolFlag{
+			Name:    "debug",
+			Usage:   "Show debug information and exit.",
+			Aliases: []string{"d"},
+		},
 	}
 }
 
