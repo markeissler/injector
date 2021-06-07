@@ -25,8 +25,8 @@ import (
 
 const (
 	appName                     = "inject"
-	ashOutputFormatter          = `%s="%s"`
-	bashOutputFormatter         = `export %s="%s"`
+	unexportedOutputFormatter   = `%s="%s"`
+	exportedOutputFormatter     = `export %s="%s"`
 	jsonIndent                  = `    `
 	envVarInjectorKeyValue      = "INJECTOR_KEY_VALUE"
 	envVarInjectorProject       = "INJECTOR_PROJECT"
@@ -106,14 +106,20 @@ func debug(ctx *cli.Context, writer io.Writer) {
 }
 
 // flags defines all of the option flags and corresponding environment variables (if applicable) for the app.
+// nolint:funlen
 func flags() []cli.Flag {
 	return []cli.Flag{
+		// key-file represents the path to a text file containing a JSON-formatted service account key for accessing the
+		// target secret manager document. It is an error to specify both `key-file` and `key-value`.
 		&cli.StringFlag{
 			Name:     "key-file",
 			Aliases:  []string{"k"},
 			Usage:    "Path to file containing JSON format service account key.",
 			Required: false,
 		},
+		// key-value is a text string containing a base64 encoded JSON-formatted service account key for accessing the
+		// target secret manager document. It is an error to specify both `key-file` and `key-value`. This value can be
+		// set via the cli or via an environment variable.
 		&cli.StringFlag{
 			Name:     "key-value",
 			Aliases:  []string{"K"},
@@ -121,24 +127,31 @@ func flags() []cli.Flag {
 			Required: false,
 			EnvVars:  []string{envVarInjectorKeyValue},
 		},
+		// format-shell outputs contents from the secret document as a list of exported shell key/value settings. A
+		// typical use case would be to write the output to a file and then `source` it elsewhere.
 		&cli.BoolFlag{
-			Name:     "format-ash",
-			Aliases:  []string{"a"},
-			Usage:    "Parse secret contents and convert to ash (shell) environment settings.",
+			Name:     "format-shell",
+			Aliases:  []string{"e"},
+			Usage:    "Parse secret contents and convert to exported shell key/value settings.",
 			Required: false,
 		},
+		// format-shell-unexported outputs contents from the secret document as a list of shell key/value settings. A
+		// typical use case would be to write the output to a file and then `source` it elsewhere.
 		&cli.BoolFlag{
-			Name:     "format-bash",
-			Aliases:  []string{"b"},
-			Usage:    "Parse secret contents and convert to bash (shell) environment settings.",
+			Name:     "format-shell-unexported",
+			Aliases:  []string{"u"},
+			Usage:    "Parse secret contents and convert to unexported shell key/value settings.",
 			Required: false,
 		},
+		// format-json outputs contents from the secret document as a standard JSON object.
 		&cli.BoolFlag{
 			Name:     "format-json",
 			Aliases:  []string{"j"},
 			Usage:    "Parse secret contents and convert from hJSON to JSON.",
 			Required: false,
 		},
+		// format-raw outputs contents from the secret document as returned by the secret manager. The format returned
+		// should be either hJSON (human JSON) or standard JSON.
 		&cli.BoolFlag{
 			Name:     "format-raw",
 			Aliases:  []string{"r"},
@@ -163,18 +176,24 @@ func flags() []cli.Flag {
 			Usage:    "Ignore missing secret options, pass environment variables from parent OS into command shell.",
 			Required: false,
 		},
+		// preserve-env will pass through environment varisables from the parent to the child process (that is, the
+		// process that is specified as the command to run).
 		&cli.BoolFlag{
 			Name:     "preserve-env",
 			Aliases:  []string{"E"},
 			Usage:    "Pass environment variables from parent OS into command shell.",
 			Required: false,
 		},
+		// output-file sets the output destination which is stdout by default but can also be set to a file path. The
+		// "-" character, as the path, also identifies stdout as the destination.
 		&cli.StringFlag{
 			Name:     "output-file",
 			Aliases:  []string{"o"},
-			Usage:    "Write output to file. Default is stdout; passing - also represents stdout.",
+			Usage:    `Write output to file. Default is stdout; passing "-" also represents stdout.`,
 			Required: false,
 		},
+		// project sets the GCP project id in which the secret manager document is stored. This value can be set via the
+		// cli or via an environment variable.
 		&cli.StringFlag{
 			Name:     "project",
 			Aliases:  []string{"p"},
@@ -182,6 +201,8 @@ func flags() []cli.Flag {
 			Required: false,
 			EnvVars:  []string{envVarInjectorProject},
 		},
+		// secret-name sets the GCP secret manager document name which identifies the specific document to retrieve.
+		// This value can be set via the cli or via an environment variable.
 		&cli.StringFlag{
 			Name:     "secret-name",
 			Usage:    "Name of secret containing environment variables and values.",
@@ -189,6 +210,9 @@ func flags() []cli.Flag {
 			Required: false,
 			EnvVars:  []string{envVarInjectorSecretName},
 		},
+		// secret-version set the version (revision) of the GCP secret manager document to retrieve. This setting is
+		// strictly option and the behavior is to retrieve the `latest` version of the named secret. Beware that setting
+		// a non-existent version will return an empty value (this is desired behavior).
 		&cli.StringFlag{
 			Name:     "secret-version",
 			Usage:    `Version of secret containing environment variables and values. ("latest" if not specified)`,
@@ -196,9 +220,11 @@ func flags() []cli.Flag {
 			Required: false,
 			EnvVars:  []string{envVarInjectorSecretVersion},
 		},
+		// debug enables the output of debugging information which is specifically helpful in identifying misconfigured
+		// and possibly conflicting settings.
 		&cli.BoolFlag{
 			Name:     "debug",
-			Usage:    "Show debug information and exit.",
+			Usage:    "Show debug information.",
 			Aliases:  []string{"d"},
 			Required: false,
 		},
@@ -210,7 +236,7 @@ func flags() []cli.Flag {
 // a cli option flag (if specifying both options via cli option flag, for instance, a conflict would also occur).
 func hasConflictingOptions(ctx *cli.Context) (bool, error) {
 	// Disallow conflicting format options.
-	if numericutil.BoolToInt(ctx.Bool("format-ash"))+numericutil.BoolToInt(ctx.Bool("format-bash"))+
+	if numericutil.BoolToInt(ctx.Bool("format-shell"))+numericutil.BoolToInt(ctx.Bool("format-shell-unexported"))+
 		numericutil.BoolToInt(ctx.Bool("format-json"))+numericutil.BoolToInt(ctx.Bool("format-raw")) > 1 {
 		return true, errors.New("multiple output formats are not supported")
 	}
@@ -298,10 +324,10 @@ func run(ctx *cli.Context) error {
 		return outputJSON(ctx, &buf, outputFile)
 	} else if ctx.Bool("format-raw") {
 		return outputRaw(ctx, &buf, outputFile)
-	} else if ctx.Bool("format-ash") {
-		return outputAshEnv(ctx, &buf, outputFile)
-	} else if ctx.Bool("format-bash") {
-		return outputBashEnv(ctx, &buf, outputFile)
+	} else if ctx.Bool("format-shell") {
+		return outputShellExported(ctx, &buf, outputFile)
+	} else if ctx.Bool("format-shell-unexported") {
+		return outputShellUnexported(ctx, &buf, outputFile)
 	}
 
 	if err := runCommand(ctx, &buf, ctx.Args().Slice()); err != nil {
@@ -385,19 +411,19 @@ func convertMapToKeyValueList(ctx *cli.Context, data map[string]interface{}) ([]
 		return []string{}, err
 	}
 
-	return jsonutil.Flatten(jsonBytes, "environment", ashOutputFormatter), nil
+	return jsonutil.Flatten(jsonBytes, "environment", unexportedOutputFormatter), nil
 }
 
-// outputAshEnv writes the secret manager document contents as ash shell environment variables to the specified
-// io.Writer.
-func outputAshEnv(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
-	return outputShell(ctx, buffer, writer, ashOutputFormatter)
+// outputShellExported writes the secret manager document contents as exported shell key/value variables to the
+// specified io.Writer.
+func outputShellExported(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
+	return outputShell(ctx, buffer, writer, unexportedOutputFormatter)
 }
 
-// outputBashEnv writes the secret manager document contents as bash shell environment variables to the specified
-// io.Writer.
-func outputBashEnv(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
-	return outputShell(ctx, buffer, writer, bashOutputFormatter)
+// outputShellUnexported writes the secret manager document contents as unexported shell key/value variables to the
+// specified io.Writer.
+func outputShellUnexported(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
+	return outputShell(ctx, buffer, writer, exportedOutputFormatter)
 }
 
 // outputShell writes the secret manager document contents as shell environment variables, formatted with the given
