@@ -25,8 +25,9 @@ import (
 
 const (
 	appName                     = "inject"
-	unexportedOutputFormatter   = `%s="%s"`
 	exportedOutputFormatter     = `export %s="%s"`
+	unexportedOutputFormatter   = `%s="%s"`
+	unquotedOutputFormatter     = `%s=%s`
 	jsonIndent                  = `    `
 	envVarInjectorKeyValue      = "INJECTOR_KEY_VALUE"
 	envVarInjectorProject       = "INJECTOR_PROJECT"
@@ -411,19 +412,19 @@ func convertMapToKeyValueList(ctx *cli.Context, data map[string]interface{}) ([]
 		return []string{}, err
 	}
 
-	return jsonutil.Flatten(jsonBytes, "environment", unexportedOutputFormatter), nil
+	return jsonutil.Flatten(jsonBytes, "environment", unquotedOutputFormatter), nil
 }
 
 // outputShellExported writes the secret manager document contents as exported shell key/value variables to the
 // specified io.Writer.
 func outputShellExported(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
-	return outputShell(ctx, buffer, writer, unexportedOutputFormatter)
+	return outputShell(ctx, buffer, writer, exportedOutputFormatter)
 }
 
 // outputShellUnexported writes the secret manager document contents as unexported shell key/value variables to the
 // specified io.Writer.
 func outputShellUnexported(ctx *cli.Context, buffer *bytes.Buffer, writer io.Writer) error {
-	return outputShell(ctx, buffer, writer, exportedOutputFormatter)
+	return outputShell(ctx, buffer, writer, unexportedOutputFormatter)
 }
 
 // outputShell writes the secret manager document contents as shell environment variables, formatted with the given
