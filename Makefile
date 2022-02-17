@@ -130,7 +130,7 @@ endif
 	$Q $(DOCKER) run --rm \
 		-v $(CURDIR):/usr/local/src/app \
 		-w /usr/local/src/app ferrarimarco/github-changelog-generator \
-		--user AlphaFlow --project injector \
+		--user markeissler --project injector \
 		--token $(GITHUB_TOKEN)
 
 .PHONY: clean

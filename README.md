@@ -124,7 +124,7 @@ ARG INJECTOR_REL='1.0.0-beta14'
 # Install injector
 RUN set -x \
     && cd "${BUILD_TEMP}" \
-    && curl -sSL "https://github.com/AlphaFlow/injector/releases/download/v${INJECTOR_REL}/linux_amd64.tar.gz" -o "injector-${INJECTOR_REL}.tar.gz" \
+    && curl -sSL "https://github.com/markeissler/injector/releases/download/v${INJECTOR_REL}/linux_amd64.tar.gz" -o "injector-${INJECTOR_REL}.tar.gz" \
     && tar xvzf "injector-${INJECTOR_REL}.tar.gz" \
     && cp "inject" "/usr/local/bin/inject-${INJECTOR_REL}" \
     && chown -R root:root "/usr/local/bin/inject-${INJECTOR_REL}" \
@@ -180,4 +180,3 @@ undesirable leakage. If you need to pass through environment variables from the 
 with those that have similar names in the retrieved secret.
 
 ---
-AlphaFlow Inc.

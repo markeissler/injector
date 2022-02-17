@@ -16,11 +16,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/alphaflow/injector/gcp"
-	"github.com/alphaflow/injector/pkg/jsonutil"
-	"github.com/alphaflow/injector/pkg/numericutil"
-	"github.com/alphaflow/injector/pkg/stringutil"
-	"github.com/alphaflow/injector/template"
+	"github.com/markeissler/injector/gcp"
+	"github.com/markeissler/injector/pkg/jsonutil"
+	"github.com/markeissler/injector/pkg/numericutil"
+	"github.com/markeissler/injector/pkg/stringutil"
+	"github.com/markeissler/injector/template"
 )
 
 const (
