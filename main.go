@@ -51,6 +51,7 @@ var (
 func main() {
 	app := &cli.App{
 		Name:                   appName,
+		HelpName:               appName,
 		Usage:                  "Handle signals and inject environment variables from GCP secret manager.",
 		Action:                 run,
 		Version:                Version,
