@@ -1,9 +1,9 @@
 # injector
 
-The `injector` is a utility that retrieves a GCP Secret Manager document which contains an HJSON or JSON object with an
-embedded top-level `environment` property under which environment variable values are defined. These values are injected
-into a shell environment in which a target command is run. The end result is that you can decouple the storage location
-and perhaps maintenance of such values from other workflows (e.g. container deployment).
+The __injector__ is a utility that retrieves a GCP Secret Manager document which contains an HJSON or JSON object with
+an embedded top-level `environment` property under which environment variable values are defined. These values are
+injected into a shell environment in which a target command is run. The end result is that you can decouple the storage
+location and perhaps maintenance of such values from other workflows (e.g. container deployment).
 
 Secret Manager documents are encrypted at rest and these values are pulled at runtime instead of being baked into a
 `Docker` image, for example, which provides extra levels of security. Furthermore, the values will not appear in a
@@ -111,14 +111,14 @@ priority.
 
 ## Wrapping PID1 for Docker containers
 
-Since the goal of the injector is to retrieve and _inject_ environment variables into the environment so that these
-values are available at runtime the underlying runtime needs to be wrapped. This means that the injector will call the
-target program. An
+Since the goal of the __injector__ is to retrieve and _inject_ environment variables into the environment so that these
+values are available at runtime the underlying runtime needs to be wrapped. This means that the __injector__ will call
+the target program. An
 
 To support a wrapper A `Dockerfile` might include the following:
 
 ```bash
-ARG INJECTOR_REL='1.0.0-beta14'
+ARG INJECTOR_REL='1.0.0'
 ...
 
 # Install injector
@@ -138,7 +138,7 @@ CMD ["/usr/local/bin/inject", "--ignore-preserve-env", "/path/to/target/app"]
 
 ## Format of the secret document
 
-The injector will parse the secret document so that environment variable names are generated from a parent up to its
+The __injector__ will parse the secret document so that environment variable names are generated from a parent up to its
 last child property in a descending tree. Consider the following document:
 
 ```HJSON
@@ -160,7 +160,7 @@ last child property in a descending tree. Consider the following document:
 }
 ```
 
-The injector will generate the following environment variables from the above document:
+The __injector__ will generate the following environment variables from the above document:
 
 * APP_DEBUG="0"
 * BUCKETS_BACKUPS="my-backups-bucket"
@@ -176,7 +176,14 @@ Notice that the top-level `environment` property is MANDATORY but will be pruned
 
 Most of the time you will not want to provide an isolated environment to the wrapped command, possibly to prevent
 undesirable leakage. If you need to pass through environment variables from the parent environment you can specify the
-`--preserve-env, -E` option. Beware that the injector will overwrite the values of any inherited environment variables
-with those that have similar names in the retrieved secret.
+`--preserve-env, -E` option. Beware that the __injector__ will overwrite the values of any inherited environment
+variables with those that have similar names in the retrieved secret.
+
+## Signals (software interrupts)
+
+The __injector__ (rel-1.0.0+) will trap and pass through (to its child process) all signals that are received. Ideally,
+any software interrupt should be passed through; however signal tests are limited to `SIGHUP`, `SIGINT`, and `SIGTERM`
+signals in both Linux and macOS environments.
 
 ---
+bunker five systems llc.
