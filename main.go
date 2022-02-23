@@ -368,7 +368,6 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 	cmd.Stderr = os.Stderr
 
 	// Create a dedicated pidgroup used to forward signals to the main process and its children.
-	// TODO: Add signal support.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	var err error
