@@ -41,3 +41,17 @@ jobs:
 
       - name: Test
         run: make test
+
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+            node-version: '16'
+
+      - name: Test Signal Forwarding
+        run: |
+          make build/linux_amd64
+          cp .bin/inject test/bin
+          cd test
+          yarn install --frozen-lockfile
+          yarn build
+          yarn start
