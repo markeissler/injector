@@ -1,0 +1,34 @@
+{
+    "name": "injector-signals-test",
+    "version": "1.0.0",
+    "description": "An Authorization API for the Nomad job search platform.",
+    "main": "src/app.ts",
+    "type": "module",
+    "scripts": {
+        "build": "export NODE_ENV='develpment'; tsc --build",
+        "clean": "tsc --build --clean",
+        "lint": "eslint --ext .ts .",
+        "start-dev": "export NODE_ENV='development'; ts-node-dev -r tsconfig-paths/register ./build/app.js",
+        "start": "ts-node -r tsconfig-paths/register ./build/app.js",
+        "watch": "export NODE_ENV='development'; ts-node-dev -r tsconfig-paths/register --respawn -- ./src/app.ts",
+        "watch-debug": "export NODE_ENV='development'; ts-node-dev -r tsconfig-paths/register --inspect-brk --respawn -- ./src/app.ts"
+    },
+    "author": "Mark Eissler <mark@bunker5.com>",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^16.7.8",
+        "@types/nunjucks": "^3.2.0",
+        "@typescript-eslint/eslint-plugin": "^4.30.0",
+        "@typescript-eslint/parser": "^4.30.0",
+        "eslint": "^7.32.0",
+        "prettier": "2.2.1",
+        "prettier-eslint": "12.0.0",
+        "ts-node": "^10.2.1",
+        "ts-node-dev": "^1.1.8",
+        "tsconfig-paths": "^3.11.0",
+        "typescript": "^4.4.2"
+    },
+    "dependencies": {
+        "execa": "^6.1.0"
+    }
+}
