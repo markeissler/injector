@@ -13,12 +13,13 @@ import (
 	cliTemplate "text/template"
 
 	"github.com/hjson/hjson-go"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/markeissler/injector/gcp"
 	"github.com/markeissler/injector/pkg/jsonutil"
 	"github.com/markeissler/injector/pkg/numericutil"
+	"github.com/markeissler/injector/pkg/signal"
 	"github.com/markeissler/injector/pkg/stringutil"
 	"github.com/markeissler/injector/template"
 )
@@ -46,6 +47,8 @@ var (
 	GitBranch = "dirty"
 	// Platform OS/ARCH
 	Platform = ""
+	// Logger
+	log = logrus.New()
 )
 
 func main() {
@@ -350,7 +353,7 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 	}
 
 	command = commandWithArgs[0]
-	if len(commandWithArgs[0]) > 1 {
+	if !stringutil.IsBlank(command) && len(commandWithArgs) > 1 {
 		args = commandWithArgs[1:]
 	}
 
@@ -386,6 +389,9 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 		log.WithError(err).Error("failed to start command")
 		return err
 	}
+
+	// Trap signals and forward to the child process.
+	signal.ForwardToPid(cmd.Process.Pid, log, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 
 	err = cmd.Wait()
 	if err != nil {
