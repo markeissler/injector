@@ -1,0 +1,94 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.122.1/containers/javascript-node-10
+{
+    "name": "Node.js 16",
+    "dockerFile": "Dockerfile",
+    // Set *default* container specific settings.json values on container create.
+    "settings": {
+        "search.exclude": {
+            "**/node_modules": false,
+            "/node_modules": true
+        },
+        "files.watcherExclude": {
+            "**/node_modules/**": false,
+            "/node_modules/**": true
+        },
+        // @FIXME: Disable debugger autoAttach and usePreviewfor now.
+        // see: https://github.com/microsoft/vscode/issues/102249
+        "debug.node.autoAttach": "disabled",
+        "debug.javascript.usePreview": false,
+        "debug.toolBarLocation": "docked",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+        "editor.codeActionsOnSaveTimeout": 500,
+        "editor.detectIndentation": true,
+        "editor.dragAndDrop": true,
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.rulers": [80, 120],
+        "editor.snippetSuggestions": "top",
+        "editor.tabSize": 4,
+        "editor.wordWrap": "off",
+        "[markdown]": {
+            "editor.wordWrap": "off",
+            "editor.quickSuggestions": {
+                "other": true,
+                "comments": false,
+                "strings": false
+            }
+        },
+        "eslint.alwaysShowStatus": true,
+        "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+        "explorer.compactFolders": false,
+        "liveServer.settings": {
+            "port": 5500,
+            "root": "/doc"
+        },
+        "markdownlint.config": {
+            "MD013": false,
+            "MD033": false
+        },
+        "terminal.integrated.profiles.linux": {
+            "bash": {
+                "path": "/bin/bash",
+                "args": ["-l"],
+                "icon": "terminal-bash"
+            }
+        },
+        "terminal.integrated.defaultPorfile.linux": "bash"
+    },
+    // Add the IDs of extensions you want installed when the container is created.
+    "extensions": [
+        "aaron-bond.better-comments",
+        "alexkrechik.cucumberautocomplete",
+        "danielknights.vscode-mjml",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "dkundel.vscode-new-file",
+        "eamodio.gitlens",
+        "editorconfig.editorconfig",
+        "formulahendry.code-runner",
+        "gruntfuggly.todo-tree",
+        "mads-hartmann.bash-ide-vscode",
+        "ms-vscode.js-debug",
+        "ms-vscode.js-debug-companion",
+        "ritwickdey.liveserver",
+        "rvest.vs-code-prettier-eslint",
+        "shardulm94.trailing-spaces",
+        "stackbreak.comment-divider"
+    ],
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    "forwardPorts": [5500, 8080],
+    // Mount ssh directory inside container for use with git. Mount node_modules from an internal volume.
+    "mounts": [
+        "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",
+        "source=injector-signal-test-persist-modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+    ],
+    // Use 'postCreateCommand' to run commands after the container is created.
+    // "postCreateCommand": "yarn install",
+    // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+    "remoteUser": "node",
+    "workspaceFolder": "/home/node/source",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/node/source,type=bind"
+}

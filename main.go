@@ -13,14 +13,15 @@ import (
 	cliTemplate "text/template"
 
 	"github.com/hjson/hjson-go"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/alphaflow/injector/gcp"
-	"github.com/alphaflow/injector/pkg/jsonutil"
-	"github.com/alphaflow/injector/pkg/numericutil"
-	"github.com/alphaflow/injector/pkg/stringutil"
-	"github.com/alphaflow/injector/template"
+	"github.com/markeissler/injector/gcp"
+	"github.com/markeissler/injector/pkg/jsonutil"
+	"github.com/markeissler/injector/pkg/numericutil"
+	"github.com/markeissler/injector/pkg/signal"
+	"github.com/markeissler/injector/pkg/stringutil"
+	"github.com/markeissler/injector/template"
 )
 
 const (
@@ -46,11 +47,14 @@ var (
 	GitBranch = "dirty"
 	// Platform OS/ARCH
 	Platform = ""
+	// Logger
+	log = logrus.New()
 )
 
 func main() {
 	app := &cli.App{
 		Name:                   appName,
+		HelpName:               appName,
 		Usage:                  "Handle signals and inject environment variables from GCP secret manager.",
 		Action:                 run,
 		Version:                Version,
@@ -349,7 +353,7 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 	}
 
 	command = commandWithArgs[0]
-	if len(commandWithArgs[0]) > 1 {
+	if !stringutil.IsBlank(command) && len(commandWithArgs) > 1 {
 		args = commandWithArgs[1:]
 	}
 
@@ -364,7 +368,6 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 	cmd.Stderr = os.Stderr
 
 	// Create a dedicated pidgroup used to forward signals to the main process and its children.
-	// TODO: Add signal support.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	var err error
@@ -385,6 +388,9 @@ func runCommand(ctx *cli.Context, buf *bytes.Buffer, commandWithArgs []string) e
 		log.WithError(err).Error("failed to start command")
 		return err
 	}
+
+	// Trap signals and forward to the child process.
+	signal.ForwardToPid(cmd.Process.Pid, log, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 
 	err = cmd.Wait()
 	if err != nil {

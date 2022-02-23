@@ -7,7 +7,7 @@ import (
 
 	"github.com/tidwall/gjson"
 
-	"github.com/alphaflow/injector/pkg/stringutil"
+	"github.com/markeissler/injector/pkg/stringutil"
 )
 
 // ConvertUnicodeToASCII converts selected unicode characters to an ascii representation to support intended output.

@@ -1,6 +1,6 @@
 package numericutil
 
-import "github.com/alphaflow/injector/pkg/stringutil"
+import "github.com/markeissler/injector/pkg/stringutil"
 
 // BoolToInt returns `1` for a `true` boolean value and `0` for a false boolean value.
 func BoolToInt(b bool) int {

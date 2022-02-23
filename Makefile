@@ -95,7 +95,7 @@ build/linux_arm64.zip: build/linux_arm64
 setup-tools: setup-lint
 
 setup-lint:
-	$(GO) get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39
 
 GOLINT = golangci-lint
 
@@ -130,7 +130,7 @@ endif
 	$Q $(DOCKER) run --rm \
 		-v $(CURDIR):/usr/local/src/app \
 		-w /usr/local/src/app ferrarimarco/github-changelog-generator \
-		--user AlphaFlow --project injector \
+		--user markeissler --project injector \
 		--token $(GITHUB_TOKEN)
 
 .PHONY: clean

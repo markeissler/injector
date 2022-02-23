@@ -22,7 +22,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.15.x, 1.16.x]
+        go-version: [1.16.x, 1.17.x]
         os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
@@ -41,3 +41,28 @@ jobs:
 
       - name: Test
         run: make test
+
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+            node-version: '16'
+
+      - name: Test Signal Forwarding (Linux)
+        if: runner.os == 'Linux'
+        run: |          
+          make build/linux_amd64
+          cp .bin/inject test/signals/bin
+          cd test/signals
+          yarn install --frozen-lockfile
+          yarn build
+          yarn start
+
+      - name: Test Signal Forwarding (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          make build/darwin_amd64
+          cp .bin/inject test/signals/bin
+          cd test/signals
+          yarn install --frozen-lockfile
+          yarn build
+          yarn start

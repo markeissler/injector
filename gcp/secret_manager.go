@@ -11,7 +11,7 @@ import (
 	"google.golang.org/api/option"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 
-	"github.com/alphaflow/injector/pkg/stringutil"
+	"github.com/markeissler/injector/pkg/stringutil"
 )
 
 // FetchSecretDocument retrieves the secret manager document specified in cli arguments and writes the contents to the
